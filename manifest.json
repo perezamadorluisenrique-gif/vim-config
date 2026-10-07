@@ -1,0 +1,10 @@
+{
+  "id": "vim-config",
+  "name": "Vim Config",
+  "version": "0.1.0",
+  "minAppVersion": "0.16.0",
+  "description": "Loads a vimrc-style file from your vault so your key mappings and editor commands are ready when vim mode starts.",
+  "author": "Siulved54",
+  "authorUrl": "https://github.com/perezamadorluisenrique-gif",
+  "isDesktopOnly": false
+}
