@@ -8,8 +8,7 @@ export type Instruction =
   | { kind: 'unmap'; line: number; ctx?: MapContext; lhs: string }
   | { kind: 'mapclear'; line: number; ctx?: MapContext }
   | { kind: 'exmap'; line: number; name: string; rhs: string }
-  | { kind: 'set'; line: number; name: string; value: string | boolean }
-  | { kind: 'ex'; line: number; command: string };
+  | { kind: 'set'; line: number; name: string; value: string | boolean };
 
 export interface LineError {
   line: number;
@@ -144,7 +143,7 @@ export function parseConfig(text: string): ParseResult {
       if (!name || !rhs) errors.push({ line, message: 'exmap needs a name and a command: exmap <name> <command>' });
       else instructions.push({ kind: 'exmap', line, name, rhs: rhs.replace(/^:/, '') });
     } else if (command === 'obcommand') {
-      instructions.push({ kind: 'ex', line, command: source });
+      errors.push({ line, message: 'obcommand runs when typed; name it with "exmap <name> obcommand <id>" and map keys to :<name><CR>' });
     } else if (command === 'set' || command === 'se') {
       if (!rest) errors.push({ line, message: 'set needs an option' });
       for (const option of rest.split(/\s+/).filter(Boolean)) {

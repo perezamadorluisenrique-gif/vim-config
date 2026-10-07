@@ -109,3 +109,9 @@ test('shadowedBySpace', () => {
   assert.equal(shadowedBySpace('<Space>'), false);
   assert.equal(shadowedBySpace('d<Space>'), false);
 });
+
+test('obcommand on its own line is an error, not an instruction', () => {
+  const { instructions, errors } = parseConfig('obcommand editor:toggle-bold');
+  assert.equal(instructions.length, 0);
+  assert.equal(errors[0]?.line, 1);
+});

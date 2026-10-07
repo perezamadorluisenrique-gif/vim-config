@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { applyInstructions, describeErrors, exCommandLine, type VimApi } from '../src/apply.ts';
+import { afterMapclear, applyInstructions, describeErrors, exCommandLine, type VimApi } from '../src/apply.ts';
 import { parseConfig } from '../src/parser.ts';
 
 function fakeVim(options: { setOption?: (name: string) => unknown; fail?: string } = {}) {
@@ -91,4 +91,20 @@ test('other leaders leave <Space> alone', () => {
 test('an explicit unmap <Space> is remembered so a reload can restore it', () => {
   const { vim } = fakeVim();
   assert.equal(applyInstructions(parseConfig('nunmap <Space>').instructions, vim).removedSpaceMotion, true);
+});
+
+test('unmap forgets the mapping so a reload cannot unmap a built-in key', () => {
+  const { vim } = fakeVim();
+  const result = applyInstructions(parseConfig('map j gj\nunmap j\nnmap k gk\nnunmap k').instructions, vim);
+  assert.deepEqual(result.mapped, []);
+});
+
+test('a mode mapclear keeps the other modes', () => {
+  const mapped = [{ lhs: 'a', ctx: 'normal' as const }, { lhs: 'b', ctx: 'insert' as const }, { lhs: 'c' }];
+  assert.deepEqual(afterMapclear(mapped, 'normal'), [
+    { lhs: 'b', ctx: 'insert' },
+    { lhs: 'c', ctx: 'insert' },
+    { lhs: 'c', ctx: 'visual' },
+  ]);
+  assert.deepEqual(afterMapclear(mapped), []);
 });

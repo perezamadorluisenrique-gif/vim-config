@@ -179,8 +179,10 @@ export default class VimConfigPlugin extends Plugin {
       original.call(this, register, operator, text, linewise, blockwise);
       if (!register && text) void navigator.clipboard.writeText(text).catch(() => undefined);
     };
+    const wrapper = controller.pushText;
     this.restoreClipboard = () => {
-      controller.pushText = original;
+      // Leave it alone if another plugin wrapped ours since.
+      if (controller.pushText === wrapper) controller.pushText = original;
     };
     this.pullClipboard();
   }

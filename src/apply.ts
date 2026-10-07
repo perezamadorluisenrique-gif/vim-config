@@ -28,6 +28,20 @@ export function exCommandLine(rhs: string, argString: string | undefined): strin
   return args ? `${rhs} ${args}` : rhs;
 }
 
+const ALL_CONTEXTS: MapContext[] = ['normal', 'insert', 'visual'];
+
+/** What the engine keeps after `mapclear`: a mode clears only itself, and a mapping for every mode becomes one per remaining mode. */
+export function afterMapclear(mapped: ApplyResult['mapped'], ctx?: MapContext): ApplyResult['mapped'] {
+  if (!ctx) return [];
+  const out: ApplyResult['mapped'] = [];
+  for (const m of mapped) {
+    if (m.ctx === ctx) continue;
+    if (m.ctx) out.push(m);
+    else for (const c of ALL_CONTEXTS) if (c !== ctx) out.push({ lhs: m.lhs, ctx: c });
+  }
+  return out;
+}
+
 export function applyInstructions(instructions: Instruction[], vim: VimApi): ApplyResult {
   const result: ApplyResult = { applied: 0, errors: [], mapped: [], sharedClipboard: false, removedSpaceMotion: false };
   // The engine answers a lone <Space> before it waits for the rest of a longer mapping, so a space
@@ -46,11 +60,13 @@ export function applyInstructions(instructions: Instruction[], vim: VimApi): App
           break;
         case 'unmap':
           vim.unmap(instruction.lhs, instruction.ctx);
+          // The engine removes the first match, which may be a built-in key: forget ours so a reload never unmaps it.
+          result.mapped = result.mapped.filter((m) => !(m.lhs === instruction.lhs && (!instruction.ctx || m.ctx === instruction.ctx)));
           if (instruction.lhs === '<Space>') result.removedSpaceMotion = true;
           break;
         case 'mapclear':
           vim.mapclear(instruction.ctx);
-          result.mapped = [];
+          result.mapped = afterMapclear(result.mapped, instruction.ctx);
           break;
         case 'exmap':
           vim.defineEx(instruction.name, '', (cm, params) => vim.handleEx(cm, exCommandLine(instruction.rhs, params.argString)));
@@ -66,8 +82,6 @@ export function applyInstructions(instructions: Instruction[], vim: VimApi): App
             }
           }
           break;
-        case 'ex':
-          break; // handled by the host: it needs an editor
       }
       result.applied++;
     } catch (error) {
