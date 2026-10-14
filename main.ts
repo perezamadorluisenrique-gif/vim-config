@@ -36,6 +36,11 @@ function getVim(): VimEngine | null {
   return adapter?.Vim ?? null;
 }
 
+/** The engine in Obsidian 1.3 and earlier, whose noremap only takes a single built-in command. */
+function hasOldNoremap(vim: VimEngine): boolean {
+  return vim.noremap.toString().includes('non-recursive keyToKey');
+}
+
 export default class VimConfigPlugin extends Plugin {
   settings: VimConfigSettings = { ...DEFAULT_SETTINGS };
   /** What the last load did, for the settings page. */
@@ -129,7 +134,7 @@ export default class VimConfigPlugin extends Plugin {
     this.unmapAll();
 
     const parsed = parseConfig(text);
-    const result = applyInstructions(parsed.instructions, vim);
+    const result = applyInstructions(parsed.instructions, vim, hasOldNoremap(vim));
     this.mapped = result.mapped;
     this.removedSpaceMotion = result.removedSpaceMotion;
     this.setClipboardShared(result.sharedClipboard);

@@ -42,7 +42,25 @@ export function afterMapclear(mapped: ApplyResult['mapped'], ctx?: MapContext): 
   return out;
 }
 
-export function applyInstructions(instructions: Instruction[], vim: VimApi): ApplyResult {
+/**
+ * Whether `noremap lhs rhs` can safely go to `map` instead: true when `rhs`
+ * mentions none of the keys the file maps, so no mapping of its own can fire.
+ * Obsidian 1.3 and earlier ship a vim engine whose `noremap` only copies a
+ * single built-in command and silently drops anything else, such as `dd`.
+ */
+export function remapIsSafe(rhs: string, instructions: Instruction[]): boolean {
+  return !instructions.some((i) => i.kind === 'map' && rhs.includes(i.lhs));
+}
+
+/**
+ * The right side as the engine should get it. The old engine runs `:cmd<CR>`
+ * as the ex command `cmd<CR>`, which does not exist; it runs `:cmd` already.
+ */
+export function rhsFor(rhs: string, oldEngine: boolean): string {
+  return oldEngine && rhs.startsWith(':') ? rhs.replace(/<CR>$/i, '') : rhs;
+}
+
+export function applyInstructions(instructions: Instruction[], vim: VimApi, oldEngine = false): ApplyResult {
   const result: ApplyResult = { applied: 0, errors: [], mapped: [], sharedClipboard: false, removedSpaceMotion: false };
   // The engine answers a lone <Space> before it waits for the rest of a longer mapping, so a space
   // leader needs the default key out of the way. Vimrc Support asks for `unmap <Space>`; do it here.
@@ -53,11 +71,13 @@ export function applyInstructions(instructions: Instruction[], vim: VimApi): App
   for (const instruction of instructions) {
     try {
       switch (instruction.kind) {
-        case 'map':
-          if (instruction.remap) vim.map(instruction.lhs, instruction.rhs, instruction.ctx);
-          else vim.noremap(instruction.lhs, instruction.rhs, instruction.ctx);
+        case 'map': {
+          const rhs = rhsFor(instruction.rhs, oldEngine);
+          if (instruction.remap || (oldEngine && remapIsSafe(rhs, instructions))) vim.map(instruction.lhs, rhs, instruction.ctx);
+          else vim.noremap(instruction.lhs, rhs, instruction.ctx);
           result.mapped.push({ lhs: instruction.lhs, ctx: instruction.ctx });
           break;
+        }
         case 'unmap':
           vim.unmap(instruction.lhs, instruction.ctx);
           // The engine removes the first match, which may be a built-in key: forget ours so a reload never unmaps it.
