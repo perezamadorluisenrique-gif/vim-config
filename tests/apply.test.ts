@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { afterMapclear, applyInstructions, describeErrors, exCommandLine, type VimApi } from '../src/apply.ts';
+import { afterMapclear, applyInstructions, describeErrors, exCommandLine, rhsFor, type VimApi } from '../src/apply.ts';
 import { parseConfig } from '../src/parser.ts';
 
 function fakeVim(options: { setOption?: (name: string) => unknown; fail?: string } = {}) {
@@ -107,4 +107,22 @@ test('a mode mapclear keeps the other modes', () => {
     { lhs: 'c', ctx: 'visual' },
   ]);
   assert.deepEqual(afterMapclear(mapped), []);
+});
+
+test('with the old engine, a noremap that cannot recurse goes to map', () => {
+  const { vim, calls } = fakeVim();
+  applyInstructions(parseConfig('nnoremap Q dd\nnnoremap j gj\nnnoremap k gk').instructions, vim, true);
+  assert.deepEqual(calls, [
+    ['map', 'Q', 'dd', 'normal'],
+    // gj mentions j, which the file maps: map could loop, so noremap stays.
+    ['noremap', 'j', 'gj', 'normal'],
+    ['noremap', 'k', 'gk', 'normal'],
+  ]);
+});
+
+test('with the old engine, :cmd<CR> loses its <CR>', () => {
+  const { vim, calls } = fakeVim();
+  applyInstructions(parseConfig('nmap Z :check<CR>').instructions, vim, true);
+  assert.deepEqual(calls, [['map', 'Z', ':check', 'normal']]);
+  assert.equal(rhsFor(':check<CR>', false), ':check<CR>');
 });
