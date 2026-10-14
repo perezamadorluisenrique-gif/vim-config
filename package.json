@@ -1,6 +1,6 @@
 {
   "name": "vim-config",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Vim Config for Obsidian - Loads a vimrc-style file from your vault so your key mappings and editor commands are ready when vim mode starts.",
   "main": "main.js",
   "scripts": {
