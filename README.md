@@ -2,7 +2,7 @@
 
 Loads a vimrc-style file from your vault so your key mappings and editor commands are ready when vim mode starts.
 
-![A vimrc file loaded by Vim Config, with the load notice](docs/screenshot.png)
+![A vimrc file loaded by Vim Config, with the load notice](https://raw.githubusercontent.com/perezamadorluisenrique-gif/vim-config/main/docs/screenshot.png)
 
 Obsidian's vim mode has no startup file. With Vim Config you keep your mappings in one file, and they are applied when Obsidian starts and again whenever you save the file. A file written for Vimrc Support works as it is.
 
