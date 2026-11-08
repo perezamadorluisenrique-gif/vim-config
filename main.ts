@@ -2,6 +2,7 @@ import { App, Notice, Plugin, PluginSettingTab, Setting, TFile, type SettingDefi
 
 import { applyInstructions, describeErrors, TEMPLATE, type VimApi } from './src/apply.ts';
 import { parseConfig, type MapContext } from './src/parser.ts';
+import { moreDefinitions, renderMore } from './src/more-link.ts';
 
 interface VimConfigSettings {
   path: string;
@@ -241,6 +242,7 @@ class VimConfigSettingTab extends PluginSettingTab {
       { ...TEXT.path, control: { type: 'text', key: 'path', defaultValue: DEFAULT_SETTINGS.path, placeholder: DEFAULT_SETTINGS.path } },
       { ...TEXT.actions, searchable: false, render: (setting: Setting) => this.actionButtons(setting) },
       { ...TEXT.status, searchable: false, render: (setting: Setting) => this.statusLine(setting) },
+      ...(moreDefinitions() as SettingDefinitionItem[]),
     ];
   }
 
@@ -274,5 +276,6 @@ class VimConfigSettingTab extends PluginSettingTab {
       .addText((t) => t.setPlaceholder(DEFAULT_SETTINGS.path).setValue(this.plugin.settings.path).onChange((v) => this.setControlValue('path', v)));
     this.actionButtons(new Setting(containerEl).setName(TEXT.actions.name).setDesc(TEXT.actions.desc));
     this.statusLine(new Setting(containerEl).setName(TEXT.status.name));
+    renderMore(this.containerEl, (el) => new Setting(el));
   }
 }
